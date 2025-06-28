@@ -9,7 +9,7 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://13.54.164.141:8080/api/change', {
+      const res = await axios.post('https://khadiijah.duckdns.org', {
         targetAmount: parseFloat(targetAmount),
         denominations: denominations.split(',').map(Number)
       });
