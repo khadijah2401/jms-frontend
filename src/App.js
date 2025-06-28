@@ -1,38 +1,72 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import styles from './App.module.css';
 
 function App() {
   const [targetAmount, setTargetAmount] = useState('');
   const [denominations, setDenominations] = useState('');
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+      const BASE_URL = 'https://khadiijah.duckdns.org'; //live version
+      //const BASE_URL = 'http://localhost:8080'; //dev version
+
+  const validateInputs = () => {
+    // validate amount
+    const amount = parseFloat(targetAmount);
+    if (isNaN(amount) || amount < 0 || amount > 10000) {
+      setError('Amount must be between 0 and 10,000');
+      return false;
+    }
+
+    // validate denominations
+    const denoms = denominations.split(',').map(item => parseFloat(item.trim()));
+    if (denoms.some(isNaN)) {
+      setError('Invalid denominations format');
+      return false;
+    }
+
+    const allowedDenoms = [0.01, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 50, 100, 1000];
+    if (denoms.some(d => !allowedDenoms.includes(d))) {
+      setError('Only allowed denominations are: 0.01, 0.05, 0.1, 0.2, 0.5, 1, 2, 5, 10, 50, 100, 1000');
+      return false;
+    }
+
+    return { amount, denoms };
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setResult(null);
+    setIsLoading(true);
+
+    const validation = validateInputs();
+    if (!validation) {
+      setIsLoading(false);
+      return;
+    }
 
     try {
-      const BASE_URL = 'https://khadiijah.duckdns.org'; //live version
-      //const BASE_URL = 'http://localhost:8080'; //dev version
-
       const res = await axios.post(`${BASE_URL}/api/change`, {
-        targetAmount: parseFloat(targetAmount),
-        denominations: denominations.split(',').map(Number)
+        targetAmount: validation.amount,
+        denominations: validation.denoms
       });
       setResult(res.data.coins);
     } catch (err) {
-      setError(' Something went wrong. Please try again.');
-      console.error(err);
+      const errorMsg = err.response?.data?.message || 'Something went wrong. Please try again.';
+      setError(`⚠️ ${errorMsg}`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: 500, margin: '3rem auto', fontFamily: 'Arial, sans-serif', padding: '2rem', border: '1px solid #ccc', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-      <h2 style={{ textAlign: 'center' }}>🪙 Coin Change Calculator</h2>
+    <div className={styles.container}>
+      <h2 className={styles.title}>🪙 Coin Change Calculator</h2>
 
       <form onSubmit={handleSubmit}>
-        <label style={{ display: 'block', marginBottom: '0.5rem' }}>
+      <label className={styles.inputLabel}>
           Target Amount:
           <input
             type="number"
@@ -40,51 +74,60 @@ function App() {
             value={targetAmount}
             onChange={(e) => setTargetAmount(e.target.value)}
             required
-            style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem', marginBottom: '1rem' }}
+            className={styles.inputField}
+            placeholder="e.g. 7.03"
           />
         </label>
 
-        <label style={{ display: 'block', marginBottom: '0.5rem' }}>
-          Denominations (comma-separated):
+        <label className={styles.inputLabel}>
+        Denominations (comma-separated):
           <input
             type="text"
             value={denominations}
             onChange={(e) => setDenominations(e.target.value)}
             placeholder="e.g. 0.01,0.5,1,5"
             required
-            style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem', marginBottom: '1rem' }}
+            className={styles.inputField}
+            pattern="^(\d+(\.\d+)?)(,\s*\d+(\.\d+)?)*$"
+            title="Enter comma-separated numbers (e.g. 0.01,0.5,1,5)"
           />
         </label>
 
         <button
           type="submit"
-          style={{
-            width: '100%',
-            padding: '0.75rem',
-            backgroundColor: '#007bff',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            cursor: 'pointer'
-          }}
+          disabled={isLoading}
+          className={styles.button}
         >
-          💡 Calculate
-        </button>
+          {isLoading ? ' Calculating...' : ' Calculate'}
+          </button>
       </form>
 
-      {error && (
-        <div style={{ marginTop: '1.5rem', color: 'red', fontWeight: 'bold' }}>
-          {error}
+      {error && <div className={styles.error}>{error}</div>}
+
+
+      {result && (
+        <div className={styles.resultContainer}>
+          <h3 className={styles.resultTitle}>Results</h3>
+          <p>{result.length} coin{result.length !== 1 ? 's' : ''} needed:</p>
+          
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem' }}>
+            {result.sort((a, b) => a - b).map((coin, index) => (
+              <span key={index} className={styles.coinChip}>
+                {coin.toFixed(2)}
+              </span>
+            ))}
+          </div>
+          
+          <details>
+            <summary>View raw JSON</summary>
+            <pre className={styles.jsonPreview}>
+              {JSON.stringify({ coins: result, count: result.length }, null, 2)}
+            </pre>
+          </details>
         </div>
       )}
 
-      {result && (
-        <div style={{ marginTop: '2rem', backgroundColor: '#f6f8fa', padding: '1rem', borderRadius: '8px' }}>
-          <h3>Result:</h3>
-          <p>{result.length} coin(s):</p>
-          <pre style={{ margin: 0 }}>{JSON.stringify(result, null, 2)}</pre>
-        </div>
-      )}
+
     </div>
   );
 }
