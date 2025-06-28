@@ -8,8 +8,8 @@ function App() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-      const BASE_URL = 'https://khadiijah.duckdns.org'; //live version
-      //const BASE_URL = 'http://localhost:8080'; //dev version
+  const BASE_URL = 'https://khadiijah.duckdns.org'; //live version
+  //const BASE_URL = 'http://localhost:8080'; //dev version
 
   const validateInputs = () => {
     // validate amount
@@ -52,7 +52,15 @@ function App() {
         targetAmount: validation.amount,
         denominations: validation.denoms
       });
-      setResult(res.data.coins);
+      const coinsUsed = res.data.coins;
+const sum = coinsUsed.reduce((a, b) => a + b, 0);
+const remaining = parseFloat((validation.amount - sum).toFixed(2));
+
+setResult({
+  coins: coinsUsed,
+  remaining: remaining > 0 ? remaining : 0
+});
+      
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Something went wrong. Please try again.';
       setError(`⚠️ ${errorMsg}`);
@@ -108,20 +116,26 @@ function App() {
       {result && (
         <div className={styles.resultContainer}>
           <h3 className={styles.resultTitle}>Results</h3>
-          <p>{result.length} coin{result.length !== 1 ? 's' : ''} needed:</p>
+          <p>{result.coins.length} coin{result.coins.length !== 1 ? 's' : ''} needed:</p>
           
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem' }}>
-            {result.sort((a, b) => a - b).map((coin, index) => (
+          {result.coins.sort((a, b) => a - b).map((coin, index) => (
               <span key={index} className={styles.coinChip}>
                 {coin.toFixed(2)}
               </span>
             ))}
           </div>
+
+          {result.remaining > 0 && (
+      <div className={styles.error}>
+        ⚠️ Could not cover full amount. Remaining: ${result.remaining.toFixed(2)}
+      </div>
+    )}
           
           <details>
             <summary>View raw JSON</summary>
             <pre className={styles.jsonPreview}>
-              {JSON.stringify({ coins: result, count: result.length }, null, 2)}
+            {JSON.stringify({ coins: result.coins, count: result.coins.length, remaining: result.remaining }, null, 2)}
             </pre>
           </details>
         </div>
