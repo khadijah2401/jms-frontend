@@ -63,7 +63,7 @@ setResult({
       
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Something went wrong. Please try again.';
-      setError(`⚠️ ${errorMsg}`);
+      setError(`${errorMsg}`);
     } finally {
       setIsLoading(false);
     }
@@ -128,7 +128,7 @@ setResult({
 
           {result.remaining > 0 && (
       <div className={styles.error}>
-        ⚠️ Could not cover full amount. Remaining: ${result.remaining.toFixed(2)}
+        Could not cover full amount. Remaining: ${result.remaining.toFixed(2)}
       </div>
     )}
           
