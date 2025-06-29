@@ -4,7 +4,7 @@ This is the React-based frontend for the **JMS Coin Change Calculator** project.
 
 ## Live Deployment
 
-🔗 [https://khadiijah.duckdns.org](https://khadiijah.duckdns.org)
+🔗 [https://coin-change-calculator-khadijah.netlify.app/]
 
 ## Features
 
